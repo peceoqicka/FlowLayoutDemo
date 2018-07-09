@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="fl_adapter" format="reference" />
+
+    <declare-styleable name="FlowLayout">
+        <attr name="fl_columnSpace" format="reference|dimension" />
+        <attr name="fl_rowSpace" format="reference|dimension" />
+    </declare-styleable>
+</resources>
