@@ -9,11 +9,10 @@ import android.widget.BaseAdapter
 
 /**
  * <pre>
- *      author  :   Peceoqicka
- *      e-mail  :   ratchet@qq.com
- *      time    :   2018/6/20
- *      desc    :
- *      version :   1.0
+ *      author  :   peceoqicka
+ *      time    :   2018/9/5
+ *      version :   1.1
+ *      desc    :   流式布局
  * </pre>
  */
 class FlowLayout : ViewGroup {
@@ -27,6 +26,7 @@ class FlowLayout : ViewGroup {
     private var adapter: BaseAdapter? = null
     private var columnSpace = 0
     private var rowSpace = 0
+    private var columnCount = 0
     private val lineHeightList = ArrayList<Int>()
     private var adapterDataSetObserver: AdapterDataSetObserver? = null
 
@@ -34,6 +34,7 @@ class FlowLayout : ViewGroup {
         context.obtainStyledAttributes(attrs, R.styleable.FlowLayout, defStyleAttr, 0).apply {
             columnSpace = getDimensionPixelSize(R.styleable.FlowLayout_fl_columnSpace, 0)
             rowSpace = getDimensionPixelSize(R.styleable.FlowLayout_fl_rowSpace, 0)
+            columnCount = getInteger(R.styleable.FlowLayout_fl_columnCount, 0)
             recycle()
         }
     }
@@ -54,29 +55,29 @@ class FlowLayout : ViewGroup {
         var height = if (heightMode == MeasureSpec.EXACTLY) heightSize else 0
 
         val availableWidth = widthSize - paddingStart - paddingEnd
+        val preferredChildWidth = if (columnCount > 0) (availableWidth - (columnCount - 1) * columnSpace) / columnCount else 0
+        val restrictWidthMeasureSpec = MeasureSpec.makeMeasureSpec(preferredChildWidth, MeasureSpec.EXACTLY)
         lineHeightList.clear()
 
         var maxLineWidth = 0
-        var maxLineHeight = 0
         var lineWidth = 0
-        var totalHeight = 0
         var columnIndex = 0
         var rowIndex = 0
 
         (0 until childCount).forEach {
             val childView = getChildAt(it)
-            measureChildWithMargins(childView, widthMeasureSpec, 0, heightMeasureSpec, 0)
+            measureChildWithMargins(childView, if (columnCount > 0) restrictWidthMeasureSpec else widthMeasureSpec, 0, heightMeasureSpec, 0)
             val layoutParams = childView.layoutParams as FlowLayout.LayoutParams
 
             val childWidth = childView.measuredWidth + layoutParams.marginStart + layoutParams.marginEnd
             val childHeight = childView.measuredHeight + layoutParams.topMargin + layoutParams.bottomMargin
+            layoutParams.preferredWidth = preferredChildWidth
 
             val predictLineWidth = lineWidth + (if (lineWidth == 0) childWidth else (columnSpace + childWidth))
 
             if (predictLineWidth <= availableWidth) {
                 //不换行
                 lineWidth = predictLineWidth
-                maxLineHeight = Math.max(maxLineHeight, childHeight)
 
                 layoutParams.layoutColumn = columnIndex
                 layoutParams.layoutRow = rowIndex
@@ -86,21 +87,24 @@ class FlowLayout : ViewGroup {
                 //换行
                 columnIndex = 0
                 rowIndex++
-                maxLineWidth = Math.max(lineWidth, maxLineWidth)
-                totalHeight += (maxLineHeight + rowSpace)
-                lineHeightList.add(maxLineHeight)
 
                 layoutParams.layoutColumn = columnIndex
                 layoutParams.layoutRow = rowIndex
 
-                maxLineHeight = if (it == childCount - 1) maxLineHeight else 0
+                maxLineWidth = Math.max(lineWidth, maxLineWidth)
                 lineWidth = childWidth
                 columnIndex++
             }
+
+            if (lineHeightList.size > rowIndex) {
+                lineHeightList[rowIndex] = Math.max(lineHeightList[rowIndex], childHeight)
+            } else {
+                lineHeightList.add(childHeight)
+            }
         }
 
-        totalHeight += maxLineHeight
-        lineHeightList.add(maxLineHeight)
+        val totalHeight = lineHeightList.fold((lineHeightList.size - 1) * rowSpace + paddingTop + paddingBottom,
+                { acc, i -> acc + i })
 
         if (widthMode != MeasureSpec.EXACTLY) {
             width = maxLineWidth
@@ -119,7 +123,7 @@ class FlowLayout : ViewGroup {
             val layoutParams = childView.layoutParams as FlowLayout.LayoutParams
 
             val cLeft = paddingStart + layoutParams.marginStart + calculateLeftPosition(it, layoutParams.layoutColumn)
-            val cTop = paddingTop + calculateTopPosition(it, layoutParams.layoutRow)
+            val cTop = layoutParams.topMargin + calculateTopPosition(layoutParams.layoutRow)
             val cRight = cLeft + childView.measuredWidth
             val cBottom = cTop + childView.measuredHeight
 
@@ -138,11 +142,11 @@ class FlowLayout : ViewGroup {
         }
     }
 
-    private fun calculateTopPosition(layoutIndex: Int, rowIndex: Int): Int {
+    private fun calculateTopPosition(rowIndex: Int): Int {
         return if (rowIndex > 0) {
-            rowSpace + lineHeightList[rowIndex] + calculateTopPosition(layoutIndex - 1, rowIndex - 1)
+            rowSpace + lineHeightList[rowIndex - 1] + calculateTopPosition(rowIndex - 1)
         } else {
-            0
+            paddingTop
         }
     }
 
@@ -156,7 +160,7 @@ class FlowLayout : ViewGroup {
     }
 
     fun setAdapter(adapter: BaseAdapter?) {
-        if (this.adapter !== adapter) {
+        if (this.adapter != adapter) {
             this.adapter?.let { a ->
                 adapterDataSetObserver?.let { o ->
                     a.unregisterDataSetObserver(o)
@@ -166,6 +170,7 @@ class FlowLayout : ViewGroup {
                 adapterDataSetObserver = AdapterDataSetObserver()
                 it.registerDataSetObserver(adapterDataSetObserver)
 
+                this.removeAllViews()
                 this.adapter = it.apply {
                     (0 until this@apply.count).forEach {
                         val childView = this@apply.getView(it, null, this@FlowLayout)
@@ -178,6 +183,8 @@ class FlowLayout : ViewGroup {
                 this.adapter = null
                 removeAllViews()
             }
+        } else {
+            println("the same adapter")
         }
     }
 
@@ -231,5 +238,6 @@ class FlowLayout : ViewGroup {
 
         var layoutColumn = 0
         var layoutRow = 0
+        var preferredWidth = 0
     }
 }

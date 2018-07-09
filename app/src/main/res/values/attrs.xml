@@ -5,5 +5,6 @@
     <declare-styleable name="FlowLayout">
         <attr name="fl_columnSpace" format="reference|dimension" />
         <attr name="fl_rowSpace" format="reference|dimension" />
+        <attr name="fl_columnCount" format="integer" />
     </declare-styleable>
 </resources>
