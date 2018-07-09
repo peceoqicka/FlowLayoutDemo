@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">FlowLayout</string>
+    <string name="add_tag">添加标签</string>
+    <string name="delete_tag">删除标签</string>
+
+    <string-array name="tag_list">
+        <item>钢铁侠</item>
+        <item>美国队长</item>
+        <item>浩克</item>
+        <item>托尔</item>
+        <item>黑寡妇</item>
+        <item>鹰眼</item>
+        <item>洛基</item>
+        <item>蜘蛛侠</item>
+    </string-array>
+
+    <string-array name="additional_tag_list">
+        <item>猩红女巫</item>
+        <item>幻视</item>
+        <item>尼克弗瑞</item>
+        <item>钢铁爱国者</item>
+        <item>星爵</item>
+        <item>螳螂女</item>
+        <item>奇异博士</item>
+        <item>蚁人</item>
+    </string-array>
+</resources>
